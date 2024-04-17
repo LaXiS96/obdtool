@@ -11,7 +11,26 @@ pub fn main() !void {
     while (true) {
         i += 1;
         trace.bufPrint(&trace_buf, "{d}\n", .{i});
+
+        if (i == 1024)
+            return error.Finished;
     }
+}
+
+pub fn panic(message: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    // TODO disable interrupts
+
+    trace.write("PANIC: ");
+    trace.write(message);
+    trace.write("\n");
+
+    var index: usize = 0;
+    var iter = std.debug.StackIterator.init(ret_addr, null);
+    while (iter.next()) |address| : (index += 1)
+        trace.bufPrint(&trace_buf, "{d: >3}: 0x{x:0>8}", .{ index, address });
+
+    while (true)
+        @breakpoint();
 }
 
 extern var _data_start: u8;
@@ -22,6 +41,7 @@ extern const _data_loadaddr: u8;
 extern const _stack: u8;
 
 // See ARMv7-M Architecture Reference Manual B1.5
+// See STM32F1 Reference Manual RM0008 10.1.2
 const VectorHandler = *const fn () callconv(.C) void;
 export const vector_table: extern struct {
     stack_pointer: *const u8 = &_stack,
@@ -39,7 +59,7 @@ export const vector_table: extern struct {
     systick: VectorHandler = null_handler,
 } linksection(".vector_table") = .{};
 
-export fn _start() callconv(.C) noreturn {
+export fn _start() noreturn {
     const data_len = @intFromPtr(&_data_end) - @intFromPtr(&_data_start);
     const data_load: [*]const u8 = @ptrCast(&_data_loadaddr);
     const data: [*]u8 = @ptrCast(&_data_start);
@@ -49,39 +69,25 @@ export fn _start() callconv(.C) noreturn {
     const bss: [*]u8 = @ptrCast(&_bss_start);
     @memset(bss[0..bss_len], 0);
 
-    // TODO log on panic via SWO trace (std logFn ?)
-    main() catch @panic("main returned");
+    main() catch |err| @panic(std.fmt.bufPrint(&trace_buf, "main returned error: {s}", .{@errorName(err)}) catch &trace_buf);
 
-    while (true)
-        @breakpoint();
+    @panic("main returned");
 }
 
 export fn null_handler() void {}
 
 export fn hard_fault_handler() void {
-    trace.write("hard fault");
-    while (true) {
-        @breakpoint();
-    }
+    @panic("hard fault");
 }
 
 export fn mem_manage_handler() void {
-    trace.write("memory management fault");
-    while (true) {
-        @breakpoint();
-    }
+    @panic("memory management fault");
 }
 
 export fn bus_fault_handler() void {
-    trace.write("bus fault");
-    while (true) {
-        @breakpoint();
-    }
+    @panic("bus fault");
 }
 
 export fn usage_fault_handler() void {
-    trace.write("usage fault");
-    while (true) {
-        @breakpoint();
-    }
+    @panic("usage fault");
 }
