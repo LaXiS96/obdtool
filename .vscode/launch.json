@@ -1,0 +1,61 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "OpenOCD Launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "./zig-out/bin/firmware.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "runToEntryPoint": "main.main",
+            "servertype": "openocd",
+            "device": "STM32F103C8",
+            "deviceName": "STM32F103C8",
+            "configFiles": [
+                "./openocd.cfg"
+            ],
+            "swoConfig": {
+                "enabled": true,
+                "cpuFrequency": 8000000,
+                "swoFrequency": 2000000,
+                "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                    }
+                ]
+            }
+        },
+        {
+            "name": "OpenOCD Attach",
+            "cwd": "${workspaceFolder}",
+            "executable": "./zig-out/bin/firmware.elf",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32F103C8",
+            "deviceName": "STM32F103C8",
+            "configFiles": [
+                "./openocd.cfg"
+            ],
+            "swoConfig": {
+                "enabled": true,
+                "cpuFrequency": 8000000,
+                "swoFrequency": 2000000,
+                "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0,
+                    }
+                ]
+            }
+        }
+    ]
+}
