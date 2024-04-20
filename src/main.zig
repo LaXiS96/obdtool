@@ -1,19 +1,20 @@
 const std = @import("std");
 const trace = @import("trace.zig");
 const rcc = @import("rcc.zig");
+const can = @import("can.zig");
 
 var trace_buf: [256]u8 = undefined;
 
 pub fn main() !void {
     rcc.setupClock_InHse8_Out72();
 
+    can.start();
+
     var i: u32 = 0;
     while (true) {
         i += 1;
-        trace.bufPrint(&trace_buf, "{d}\n", .{i});
-
-        if (i == 1024)
-            return error.Finished;
+        if (can.read()) |msg|
+            trace.bufPrint(&trace_buf, "{d} {x}\n", .{ i, msg.id.standard });
     }
 }
 

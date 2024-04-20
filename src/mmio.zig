@@ -46,3 +46,33 @@ pub fn Mmio(comptime PackedT: type) type {
         }
     };
 }
+
+pub fn Raw(comptime IntT: type) type {
+    return struct {
+        const Self = @This();
+
+        raw: *volatile IntT,
+
+        pub fn at(address: usize) Self {
+            return Self{ .raw = @ptrFromInt(address) };
+        }
+
+        pub inline fn read(self: Self) IntT {
+            return self.raw.*;
+        }
+
+        pub inline fn write(self: Self, value: IntT) void {
+            self.raw.* = value;
+        }
+
+        /// Sets bits that are 1 in bitMask
+        pub inline fn set(self: Self, bitMask: IntT) void {
+            self.raw.* |= bitMask;
+        }
+
+        /// Clears bits that are 1 in bitMask
+        pub inline fn clear(self: Self, bitMask: IntT) void {
+            self.raw.* &= ~bitMask;
+        }
+    };
+}
