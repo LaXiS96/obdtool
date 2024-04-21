@@ -1,12 +1,15 @@
 const std = @import("std");
 const trace = @import("trace.zig");
 const rcc = @import("rcc.zig");
+const gpio = @import("gpio.zig");
 const can = @import("can.zig");
 
 var trace_buf: [256]u8 = undefined;
 
 pub fn main() !void {
     rcc.setupClock_InHse8_Out72();
+
+    const led = gpio.Gpio.new(.PC, 13).asOutput(.output_2mhz, .pushpull);
 
     can.start();
 
@@ -15,10 +18,16 @@ pub fn main() !void {
         i += 1;
         if (can.read()) |msg|
             trace.bufPrint(&trace_buf, "{d} {x}\n", .{ i, msg.id.standard });
+
+        if (i % 1_000_000 == 0)
+            if (led.read())
+                led.low()
+            else
+                led.high();
     }
 }
 
-pub fn panic(message: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+pub fn panic(message: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
     // TODO disable interrupts
 
     trace.write("PANIC: ");
@@ -26,7 +35,7 @@ pub fn panic(message: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize)
     trace.write("\n");
 
     var index: usize = 0;
-    var iter = std.debug.StackIterator.init(ret_addr, null);
+    var iter = std.debug.StackIterator.init(@returnAddress(), null);
     while (iter.next()) |address| : (index += 1)
         trace.bufPrint(&trace_buf, "{d: >3}: 0x{x:0>8}", .{ index, address });
 

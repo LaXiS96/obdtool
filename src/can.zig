@@ -134,10 +134,10 @@ pub const CAN = struct {
         _reserved2: u18,
     }).at(CAN_BASE + 0x200);
 
-    pub const FM1R = mmio.Raw(u32).at(CAN_BASE + 0x204);
-    pub const FS1R = mmio.Raw(u32).at(CAN_BASE + 0x20c);
-    pub const FFA1R = mmio.Raw(u32).at(CAN_BASE + 0x214);
-    pub const FA1R = mmio.Raw(u32).at(CAN_BASE + 0x21c);
+    pub const FM1R = mmio.Bits(u32).at(CAN_BASE + 0x204);
+    pub const FS1R = mmio.Bits(u32).at(CAN_BASE + 0x20c);
+    pub const FFA1R = mmio.Bits(u32).at(CAN_BASE + 0x214);
+    pub const FA1R = mmio.Bits(u32).at(CAN_BASE + 0x21c);
 
     pub const FiRx: *volatile [28 * 2]u32 = @ptrFromInt(CAN_BASE + 0x240);
 };
@@ -158,13 +158,8 @@ pub fn start() void {
     rcc.RCC.APB1ENR.modify(.{ .CANEN = true });
 
     // Set up GPIOs (CANTX: PA12, CANRX: PA11)
-    gpio.GPIO.GPIOA_CRH.modify(.{
-        .MODE11 = .input,
-        .CNF11 = .{ .input = .pull },
-        .MODE12 = .output_50mhz,
-        .CNF12 = .{ .output = .alternate_pushpull },
-    });
-    gpio.GPIO.GPIOA_ODR.modify(.{ .ODR11 = 1 }); // Pull PA11 up
+    _ = gpio.Gpio.new(.PA, 12).asOutput(.output_2mhz, .alternate_pushpull);
+    gpio.Gpio.new(.PA, 11).asInput(.pull).high();
 
     // CAN peripheral starts in sleep mode after hardware reset
     CAN.MCR.modify(.{ .SLEEP = false });

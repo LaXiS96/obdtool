@@ -1,12 +1,10 @@
 const std = @import("std");
 
 pub fn Mmio(comptime PackedT: type) type {
-    const size = @bitSizeOf(PackedT);
-    if (size % 8 != 0)
-        @compileError("size must be divisible by 8!");
-
-    if (!std.math.isPowerOfTwo(size / 8))
-        @compileError("size must encode a power of two number of bytes!");
+    _ = switch (@bitSizeOf(PackedT)) {
+        8, 16, 32 => true,
+        else => @compileError("non-aligned bit size"),
+    };
 
     const BackingT = @typeInfo(PackedT).Struct.backing_integer orelse @compileError("PackedT must be a packed struct");
 
@@ -47,7 +45,14 @@ pub fn Mmio(comptime PackedT: type) type {
     };
 }
 
-pub fn Raw(comptime IntT: type) type {
+pub fn Bits(comptime IntT: type) type {
+    _ = switch (@bitSizeOf(IntT)) {
+        8, 16, 32 => true,
+        else => @compileError("non-aligned bit size"),
+    };
+
+    if (@typeInfo(IntT) != .Int) @compileError("IntT must be an integer type");
+
     return struct {
         const Self = @This();
 
@@ -65,14 +70,14 @@ pub fn Raw(comptime IntT: type) type {
             self.raw.* = value;
         }
 
-        /// Sets bits that are 1 in bitMask
-        pub inline fn set(self: Self, bitMask: IntT) void {
-            self.raw.* |= bitMask;
+        /// Sets bits that are 1 in bit_mask
+        pub inline fn set(self: Self, bit_mask: IntT) void {
+            self.raw.* |= bit_mask;
         }
 
-        /// Clears bits that are 1 in bitMask
-        pub inline fn clear(self: Self, bitMask: IntT) void {
-            self.raw.* &= ~bitMask;
+        /// Clears bits that are 1 in bit_mask
+        pub inline fn clear(self: Self, bit_mask: IntT) void {
+            self.raw.* &= ~bit_mask;
         }
     };
 }
