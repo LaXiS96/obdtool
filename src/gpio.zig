@@ -120,6 +120,10 @@ pub const Gpio = struct {
         return self;
     }
 
+    pub fn deinit(self: Self) void {
+        self.setup(@intFromEnum(InputMode.input), @intFromEnum(InputConf.floating));
+    }
+
     pub inline fn read(self: Self) bool {
         @setRuntimeSafety(false);
         return (@as(*volatile u32, @ptrFromInt(self.port_base + GPIO.IDR_offset)).* & self.pin_mask) > 0;

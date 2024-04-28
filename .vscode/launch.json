@@ -10,7 +10,7 @@
             "executable": "./zig-out/bin/firmware.elf",
             "request": "launch",
             "type": "cortex-debug",
-            "runToEntryPoint": "main.main",
+            // "runToEntryPoint": "main.main",
             "servertype": "openocd",
             "device": "STM32F103C8",
             "deviceName": "STM32F103C8",

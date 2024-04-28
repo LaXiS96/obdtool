@@ -17,12 +17,20 @@ pub fn Mmio(comptime PackedT: type) type {
             return Self{ .raw = @ptrFromInt(address) };
         }
 
+        pub inline fn readRaw(self: Self) BackingT {
+            return self.raw.*;
+        }
+
+        pub inline fn writeRaw(self: Self, value: BackingT) void {
+            self.raw.* = value;
+        }
+
         pub inline fn read(self: Self) PackedT {
-            return @bitCast(self.raw.*);
+            return @bitCast(self.readRaw());
         }
 
         pub inline fn write(self: Self, value: PackedT) void {
-            self.raw.* = @bitCast(value);
+            self.writeRaw(@bitCast(value));
         }
 
         // TODO can we make the fields parameter aware of PackedT? maybe std.meta.FieldEnum? something like typescript's Partial<T>

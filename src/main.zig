@@ -3,6 +3,7 @@ const trace = @import("trace.zig");
 const rcc = @import("rcc.zig");
 const gpio = @import("gpio.zig");
 const can = @import("can.zig");
+const usb = @import("usb.zig");
 
 var trace_buf: [256]u8 = undefined;
 
@@ -11,20 +12,47 @@ pub fn main() !void {
 
     const led = gpio.Gpio.new(.PC, 13).asOutput(.output_2mhz, .pushpull);
 
-    can.start();
+    // TODO can is on the same pins as usb, also the 512B sram is shared
+    // can.start();
 
+    // Force USB reenumeration by pulling D+ (PA12) low for >50ms
+    const usb_dp = gpio.Gpio.new(.PA, 12).asOutput(.output_2mhz, .pushpull);
+    usb_dp.low();
     var i: u32 = 0;
+    while (i < 500_000) i += 1;
+    usb_dp.deinit();
+
+    try usb.start();
+
+    i = 0;
     while (true) {
         i += 1;
-        if (can.read()) |msg|
-            trace.bufPrint(&trace_buf, "{d} {x}\n", .{ i, msg.id.standard });
+        // if (can.read()) |msg|
+        //     trace.bufPrint(&trace_buf, "{d} {x}\n", .{ i, msg.id.standard });
 
-        if (i % 1_000_000 == 0)
+        try usb.Device.task(true);
+
+        if (i % 200_000 == 0)
             if (led.read())
                 led.low()
             else
                 led.high();
     }
+}
+
+pub const std_options = std.Options{
+    .logFn = logFn,
+};
+
+fn logFn(
+    comptime level: std.log.Level,
+    comptime scope: @TypeOf(.EnumLiteral),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    const level_txt = comptime level.asText();
+    const prefix2 = if (scope == .default) ": " else "(" ++ @tagName(scope) ++ "): ";
+    trace.bufPrint(&trace_buf, level_txt ++ prefix2 ++ format ++ "\n", args);
 }
 
 pub fn panic(message: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
